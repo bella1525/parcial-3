@@ -28,6 +28,7 @@
 
 - Función imprimir_arbol: Imprime en consola la estructura del árbol para revisión rápida
 
-## ejemplo de como seria la grafica del arbol
-![Imagen de WhatsApp 2025-05-19 a las 20 29 31_dfd171a4](https://github.com/user-attachments/assets/cac67900-2814-455e-b8a2-fc02b46cc200)
+## explicacion
+
+https://youtu.be/uQielL_GMPE?feature=shared
 
