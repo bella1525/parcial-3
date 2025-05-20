@@ -1,1 +1,115 @@
+import re
+from graphviz import Digraph
+
+# Clase Movimiento
+class Movimiento:
+    def _init_(self, texto):
+        self.texto = texto.strip()
+
+# Clase Analizador (Validador SAN) 
+class Analizador:
+    def _init_(self):
+        self.patrones = [
+            r'^[a-h][1-8]$',                              # Movimiento simple de peón
+            r'^[KQRBN][a-h]?[1-8]?x?[a-h][1-8][+#]?$',     # Movimiento de pieza
+            r'^[a-h]x[a-h][1-8][+#]?$',                    # Captura de peón
+            r'^O-O(-O)?[+#]?$',                            # Enroque corto o largo  
+            r'^[KQRBN]x[a-h][1-8][+#]?$',                  # Captura con pieza
+        ]
+
+    def es_valido(self, jugada):
+        for patron in self.patrones:
+            if re.match(patron, jugada):
+                return True
+        return False
+
+    def validar_partida(self, lineas):
+        errores = []
+        for i, linea in enumerate(lineas):
+            jugadas = linea.strip().split()
+            for jugada in jugadas:
+                if not self.es_valido(jugada):
+                    errores.append(f"Línea {i+1}: jugada inválida '{jugada}'")
+        return errores
+
+# Clase Nodo del Árbol 
+class NodoArbol:
+    def _init_(self, movimiento):
+        self.movimiento = movimiento
+        self.izquierda = None
+        self.derecha = None
+
+# Clase Árbol de Partida
+class ArbolPartida:
+    def _init_(self):
+        self.raiz = NodoArbol("Partida")
+
+    def agregar_turno(self, blanca, negra=None):
+        nuevo_turno = NodoArbol("Turno")
+        nuevo_turno.izquierda = NodoArbol(blanca)
+        if negra:
+            nuevo_turno.derecha = NodoArbol(negra)
+
+        actual = self.raiz
+        while actual.derecha:
+            actual = actual.derecha
+        actual.derecha = nuevo_turno
+
+# Clase Visualizador del Árbol
+class VisualizadorArbol:
+    def _init_(self, arbol):
+        self.arbol = arbol
+        self.dot = Digraph()
+
+    def _agregar_nodos(self, nodo, id_padre=None):
+        if nodo is None:
+            return
+        id_actual = str(id(nodo))
+        self.dot.node(id_actual, nodo.movimiento)
+        if id_padre:
+            self.dot.edge(id_padre, id_actual)
+        self._agregar_nodos(nodo.izquierda, id_actual)
+        self._agregar_nodos(nodo.derecha, id_actual)
+
+    def generar_grafico(self, archivo="arbol_final"):
+        self._agregar_nodos(self.arbol.raiz)
+        self.dot.render(archivo, view=True, format="png")
+
+# Función para imprimir el árbol en consola (verificación) 
+def imprimir_arbol(nodo, nivel=0):
+    if nodo is None:
+        return
+    print("  " * nivel + f"- {nodo.movimiento}")
+    imprimir_arbol(nodo.izquierda, nivel + 1)
+    imprimir_arbol(nodo.derecha, nivel + 1)
+
+# Lógica principal 
+def main():
+    analizador = Analizador()
+    arbol = ArbolPartida()
+
+    with open("partida.txt", encoding="utf-8") as archivo:
+        lineas = archivo.readlines()
+
+    errores = analizador.validar_partida(lineas)
+    if errores:
+        print("Errores encontrados en la partida:")
+        for e in errores:
+            print(e)
+        return
+
+    for linea in lineas:
+        jugadas = linea.strip().split()
+        blanca = jugadas[0] if len(jugadas) > 0 else None
+        negra = jugadas[1] if len(jugadas) > 1 else None
+        arbol.agregar_turno(blanca, negra)
+
+    print("Árbol generado (estructura):")
+    imprimir_arbol(arbol.raiz)
+
+    visualizador = VisualizadorArbol(arbol)
+    visualizador.generar_grafico("arbol_final")
+
+if _name_ == "_main_":
+    main()
 
